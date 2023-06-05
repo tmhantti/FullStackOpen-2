@@ -1,29 +1,32 @@
 import { useState, useEffect } from 'react'
 import services from './services/persons.js'
-import axios from 'axios'
-
+import Notification from './components/Notification'
 import Filter from './components/Filter'
 import FillForm from './components/FillForm'
 import ShowPersons from './components/ShowPersons'
 
 const App = () => { 
-  // tilamuuttujat - "puhelinluettelo"
+  // tilamuuttuja - "puhelinluettelo"
   const [persons, setPersons] = useState([])  
-  // tilamuuttujat - hakumerkkijono
+  // tilamuuttuja - hakumerkkijono
   const [searchString, setSearchString] = useState('') 
-  // tilamuuttujat - nimi
+  // tilamuuttuja - nimi
   const [newName, setNewName] = useState('')
-  // tilamuuttujat - numero
+  // tilamuuttuja - numero
   const [newNumber, setNewNumber] = useState('')
+  // tilamuuttuja - onnistunut muutos/lisäys/poisto
+  const [successMessage, setSuccessMessage] = useState(null)
+  // tilamuuttuja - virhetilanne (muutos/poisto)
+  const [errorMessage, setErrorMessage] = useState(null)
    
-   // hae data mock-serverilta:
-   // käytä persons.js-tiedostossa määriteltyjä metodeja:
+   // hae data mock-serverilta,
+   // käytä persons.js-tiedostossa määriteltyjä metodeja
    useEffect(() => {
     services.getAll()
       .then(initData=> {setPersons(initData)})
     }, [])
 
-  // lisää henkilö "puhelinluetteloon": 
+  // lisää henkilö "puhelinluetteloon"
   const addPerson = (event) => {
     event.preventDefault()
     // kerää kaikki nimet taulukkoon
@@ -32,7 +35,7 @@ const App = () => {
     // tarkista löytyykö nimi jo rakenteesta
     if (allNames.includes(newName)) {
       // alert(`${newName} is already added to phonebook`)
-      // jos löytyy, päivitä pyydettäessä puhelinnumero:
+      // jos löytyy, niin päivitä pyydettäessä puhelinnumero:
       if (window.confirm(`${newName} is already added to phonebook, replace the old number with new one?`)) {
         // etsi nimeä vastaava objekti
         const foundPerson = persons.find(p=> p.name === newName)   
@@ -47,14 +50,30 @@ const App = () => {
             // tyhjennä kentät
             setNewName('')
             setNewNumber('')
+            // tulosta ilmoitus
+            setSuccessMessage(
+              `Phone number of '${foundPerson.name}' was updated`
+            )
+            setTimeout(() => {
+              setSuccessMessage(null)
+              }, 5000)
           })
+            // virheilmoitus
+          .catch(error => {
+            setErrorMessage(
+              `Person '${foundPerson.name}' was already removed from server`
+            )
+            setTimeout(() => {
+              setErrorMessage(null)
+            }, 5000)
+          })
+          
       }
     }
     // muussa tapauksessa luo uusi objekti
     else {
       // luo uusi ID:
       const newID = Math.max(...persons.map(pp => pp.id))
-      console.log(newID)
       const nameObject = {
         name: newName,
         number: newNumber,
@@ -68,6 +87,13 @@ const App = () => {
         // tyhjennä kentät
         setNewName('')
         setNewNumber('')
+        // tulosta ilmoitus
+        setSuccessMessage(
+          `Person '${nameObject.name}' was added to the phone book`
+        )
+        setTimeout(() => {
+          setSuccessMessage(null)
+        }, 5000)
       })
     }
   }
@@ -82,7 +108,22 @@ const App = () => {
       services
         .del(id, removedPerson)
         .then(setPersons(persons.filter(p => p.id !== id)))
-      console.log(`person with id ${id} deleted`)
+        // tulosta ilmoitus
+        setSuccessMessage(
+          `Person '${removedPerson.name}' was deleted from the phone book`
+        )
+        setTimeout(() => {
+          setSuccessMessage(null)
+        }, 5000)
+        // virheilmoitus
+        .catch(error => {
+          setErrorMessage(
+            `Person '${removedPerson.name}' was already removed from server`
+            )
+          setTimeout(() => {
+            setErrorMessage(null)
+          }, 5000)
+        })        
     }
   }
 
@@ -103,6 +144,8 @@ const App = () => {
 
     return (
     <div>
+      <Notification message={successMessage} />
+      <Notification message={errorMessage} />
       <h2>Phonebook</h2>
       <Filter 
         handleSearchStringChange= {handleSearchStringChange}
