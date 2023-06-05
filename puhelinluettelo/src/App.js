@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import services from './services/persons.js'
 import axios from 'axios'
 
 import Filter from './components/Filter'
@@ -14,7 +15,7 @@ const App = () => {
   const [newName, setNewName] = useState('')
   // tilamuuttujat - numero
   const [newNumber, setNewNumber] = useState('')
-
+/* 
   // hae data mock-serverilta:
   const hook = () => {
     axios
@@ -24,31 +25,75 @@ const App = () => {
       })
   }
   // effect hook - ajetaan vain kerran (kun 'persons' on [])  
-  useEffect(hook, [])
+  useEffect(hook, []) */
+   
+   // hae data mock-serverilta:
+   // käytä persons.js-tiedostossa määriteltyjä metodeja:
+   useEffect(() => {
+    services.getAll()
+      .then(initData=> {setPersons(initData)})
+    }, [])
 
   // lisää henkilö "puhelinluetteloon": 
   const addPerson = (event) => {
     event.preventDefault()
-    // tarkista, että onko nimi jo listassa:
     // kerää kaikki nimet taulukkoon
     const allNames= persons.reduce(
       (names, cur) => (names.concat(cur.name)), [])
-    // ilmoita, jos nimi löytyy jo taulukosta
+    // tarkista löytyykö nimi jo rakenteesta
     if (allNames.includes(newName)) {
-      alert(`${newName} is already added to phonebook`)
+      // alert(`${newName} is already added to phonebook`)
+      // jos löytyy, päivitä pyydettäessä puhelinnumero:
+      if (window.confirm(`${newName} is already added to phonebook, replace the old number with new one?`)) {
+        // etsi nimeä vastaava objekti
+        const foundPerson = persons.find(p=> p.name === newName)   
+        const tmp= newNumber 
+        const id= foundPerson.id
+        const updatedPerson= { ...foundPerson, number: tmp}
+        // päivitä mock-serveri ja persons-rakenne
+        services
+          .update(id, updatedPerson)
+          .then(returnedPerson => {
+            setPersons(persons.map(person => person.id !== id ? person : returnedPerson))
+            // tyhjennä kentät
+            setNewName('')
+            setNewNumber('')
+          })
+      }
     }
-    // muussa tapauksessa lisää objekti
+    // muussa tapauksessa luo uusi objekti
     else {
       const nameObject = {
         name: newName,
-        number: newNumber
+        number: newNumber,
+        id: persons.length + 1
       }  
-      setPersons (persons.concat(nameObject))
-      setNewName('')
-      setNewNumber('')
+      // lisää objekti mock-serverille + rakenteeseen
+      services
+      .create(nameObject)
+      .then(returnedPerson => {
+        setPersons(persons.concat(returnedPerson))
+        // tyhjennä kentät
+        setNewName('')
+        setNewNumber('')
+      })
     }
   }
   
+  // poista henkilö "puhelinluettelosta"
+  const deletePerson = id => {
+    // etsi id:tä vastaava objekti
+    const removedPerson = persons.find(p=> p.id === id)
+    // varmista pyyntö
+    if (window.confirm(`Delete ${removedPerson.name}?`)) {
+      // poista objekti mock-serveriltä + rakenteesta
+      services
+        .del(id, removedPerson)
+        .then(setPersons(persons.filter(p => p.id !== id)))
+      console.log(`person with id ${id} deleted`)
+    }
+  }
+
   // tapahtumien käsittelijät:
   const handleNameChange = (event) => {
     setNewName(event.target.value)
@@ -58,7 +103,6 @@ const App = () => {
   }
   const handleSearchStringChange = (event) => {
     setSearchString(event.target.value)
-    // console.log(filteredPersons)
   }
 
   // suodata henkilöt hakumerkkijonon perusteella: 
@@ -79,11 +123,14 @@ const App = () => {
         newNumber= {newNumber} 
         addPerson= {addPerson} 
         handleNameChange= {handleNameChange} 
-        handleNumberChange= {handleNumberChange} />
+        handleNumberChange= {handleNumberChange}           
+        />
 
       <h2>Numbers</h2>
       <ShowPersons 
-        persons= {filteredPersons}/>
+        persons= {filteredPersons}
+        delPerson= {deletePerson}
+        />
     </div>
   )
 
