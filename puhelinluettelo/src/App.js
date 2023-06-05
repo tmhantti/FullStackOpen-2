@@ -1,32 +1,30 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
+import axios from 'axios'
+
 import Filter from './components/Filter'
 import FillForm from './components/FillForm'
 import ShowPersons from './components/ShowPersons'
 
-// eriytetty komponentti: yksittäisen henkilön tiedot
-const PersonInfo= ({ person }) => {
-  return (
-    <li>{person.name} {person.number}</li>
-  )
-}
-
-const App = () => {
-  // esimerkkidata:
-  const initData= 
-  [
-    { name: 'Arto Hellas', number: '040-123456' },
-    { name: 'Ada Lovelace', number: '39-44-5323523' },
-    { name: 'Dan Abramov', number: '12-43-234345' },
-    { name: 'Mary Poppendieck', number: '39-23-6423122' }
-  ]
+const App = () => { 
   // tilamuuttujat - "puhelinluettelo"
-  const [persons, setPersons] = useState(initData)  
-  // tilamuuttujat - suodatettu "puhelinluettelo"
+  const [persons, setPersons] = useState([])  
+  // tilamuuttujat - hakumerkkijono
   const [searchString, setSearchString] = useState('') 
   // tilamuuttujat - nimi
   const [newName, setNewName] = useState('')
   // tilamuuttujat - numero
   const [newNumber, setNewNumber] = useState('')
+
+  // hae data mock-serverilta:
+  const hook = () => {
+    axios
+      .get('http://localhost:3001/persons')
+      .then(response => {
+        setPersons(response.data)
+      })
+  }
+  // effect hook - ajetaan vain kerran (kun 'persons' on [])  
+  useEffect(hook, [])
 
   // lisää henkilö "puhelinluetteloon": 
   const addPerson = (event) => {
@@ -72,8 +70,7 @@ const App = () => {
       <h2>Phonebook</h2>
       <Filter 
         handleSearchStringChange= {handleSearchStringChange}
-        searchString= {searchString}
-        />
+        searchString= {searchString}/>
 
       <h2>Add a new</h2>
       <FillForm 
