@@ -15,17 +15,6 @@ const App = () => {
   const [newName, setNewName] = useState('')
   // tilamuuttujat - numero
   const [newNumber, setNewNumber] = useState('')
-/* 
-  // hae data mock-serverilta:
-  const hook = () => {
-    axios
-      .get('http://localhost:3001/persons')
-      .then(response => {
-        setPersons(response.data)
-      })
-  }
-  // effect hook - ajetaan vain kerran (kun 'persons' on [])  
-  useEffect(hook, []) */
    
    // hae data mock-serverilta:
    // käytä persons.js-tiedostossa määriteltyjä metodeja:
@@ -63,10 +52,13 @@ const App = () => {
     }
     // muussa tapauksessa luo uusi objekti
     else {
+      // luo uusi ID:
+      const newID = Math.max(...persons.map(pp => pp.id))
+      console.log(newID)
       const nameObject = {
         name: newName,
         number: newNumber,
-        id: persons.length + 1
+        id: newID + 1
       }  
       // lisää objekti mock-serverille + rakenteeseen
       services
